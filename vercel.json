@@ -1,0 +1,9 @@
+{
+  "cleanUrls": true,
+  "functions": {
+    "api/save.js": { "maxDuration": 60, "memory": 1024 },
+    "api/opds.js": { "maxDuration": 15 },
+    "api/epub.js": { "maxDuration": 15 },
+    "api/articles.js": { "maxDuration": 15 }
+  }
+}

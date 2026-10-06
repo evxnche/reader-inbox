@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reader Inbox</title>
+<style>
+  :root { --bg:#fbfaf7; --fg:#1b1b1b; --muted:#666; --line:#e2e0da; --accent:#1f4fd1; --code:#f0eee8; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151515; --fg:#ececec; --muted:#a0a0a0; --line:#2c2c2c; --accent:#8fb0ff; --code:#222; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.55 -apple-system, system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 38rem; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.1rem; margin: 2.2rem 0 .5rem; }
+  p, li { color: var(--fg); }
+  .muted { color: var(--muted); }
+  input { width:100%; font:inherit; padding:.6rem .7rem; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; }
+  code, .field { font-family: ui-monospace, Menlo, monospace; font-size: .9em; background: var(--code); padding: .1em .35em; border-radius: 5px; word-break: break-all; }
+  .bookmarklet { display:inline-block; margin:.4rem 0; padding:.55rem .9rem; border-radius:8px; background:var(--accent); color:#fff; text-decoration:none; font-weight:600; }
+  ol { padding-left: 1.3rem; }
+  li { margin: .35rem 0; }
+  section[hidden] { display:none; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: .35rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child { color: var(--muted); white-space: nowrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Reader Inbox</h1>
+  <p class="muted">Send articles and X posts to the e-reader as clean e-books.</p>
+
+  <h2>Your key</h2>
+  <p class="muted">Stays in this browser only. It is the <code>READER_KEY</code> you were given.</p>
+  <input id="key" type="password" autocomplete="off" placeholder="Paste your key">
+
+  <section id="setup" hidden>
+    <h2>Mac: one-click button</h2>
+    <p>Drag this to your bookmarks bar. Click it on any article to send it, exactly as you see it (logged-in and paywalled pages included).</p>
+    <a class="bookmarklet" id="bookmarklet" href="#">Send to Reader</a>
+
+    <h2>iPhone: share sheet</h2>
+    <ol>
+      <li>Open <b>Shortcuts</b>, tap <b>+</b>, name it <b>Send to Reader</b>.</li>
+      <li>Tap the <b>ⓘ</b> and turn on <b>Show in Share Sheet</b>.</li>
+      <li>Add the action <b>Get Contents of URL</b> with this URL:
+        <div class="field" id="shortcutUrl"></div></li>
+      <li>In that action tap <b>Show More</b>: Method <b>POST</b>, Request Body <b>JSON</b>, add a <b>Text</b> field named <code>url</code> and set it to <b>Shortcut Input</b>.</li>
+      <li>Add <b>Get Dictionary Value</b>: key <code>message</code>.</li>
+      <li>Add <b>Show Notification</b> with the <b>Dictionary Value</b>.</li>
+    </ol>
+    <p class="muted">Then in Safari, X or any app: Share → Send to Reader.</p>
+
+    <h2>The reader</h2>
+    <p>Settings → System → OPDS Servers → add:</p>
+    <table>
+      <tr><td>Name</td><td><span class="field">Articles</span></td></tr>
+      <tr><td>URL</td><td><span class="field" id="opdsUrl"></span></td></tr>
+      <tr><td>Username</td><td><span class="field">reader</span></td></tr>
+      <tr><td>Password</td><td>your key</td></tr>
+    </table>
+  </section>
+</main>
+<script>
+  const origin = location.origin;
+  const keyInput = document.getElementById('key');
+  function stored() { try { return localStorage.getItem('readerKey') || ''; } catch { return ''; } }
+  function store(v) { try { localStorage.setItem('readerKey', v); } catch {} }
+
+  function bookmarklet(key) {
+    const save = `${origin}/api/save?k=${encodeURIComponent(key)}`;
+    // Posts the rendered page in a new tab. Sites whose security policy blocks
+    // that get the link sent instead, and the server fetches the page itself.
+    const src = `(()=>{const B=${JSON.stringify(save)},u=location.href;let d=0;const f=()=>{if(d)return;d=1;window.open(B+'&view=page&url='+encodeURIComponent(u),'_blank')};document.addEventListener('securitypolicyviolation',f,{once:true});try{const c=document.documentElement.cloneNode(true);c.querySelectorAll('script,style,noscript,iframe,svg,template,link').forEach(e=>e.remove());const m=document.createElement('form');m.method='POST';m.action=B;m.target='_blank';m.acceptCharset='utf-8';m.style.display='none';for(const[n,v]of[['url',u],['html','<!doctype html>'+c.outerHTML]]){const t=document.createElement('textarea');t.name=n;t.value=v;m.appendChild(t)}document.body.appendChild(m);m.submit();m.remove()}catch(e){f()}})()`;
+    return 'javascript:' + encodeURIComponent(src);
+  }
+
+  function render() {
+    const key = keyInput.value.trim();
+    document.getElementById('setup').hidden = !key;
+    if (!key) return;
+    store(key);
+    document.getElementById('bookmarklet').href = bookmarklet(key);
+    document.getElementById('shortcutUrl').textContent = `${origin}/api/save?k=${encodeURIComponent(key)}`;
+    document.getElementById('opdsUrl').textContent = `${origin}/api/opds`;
+  }
+  keyInput.value = stored();
+  keyInput.addEventListener('input', render);
+  render();
+</script>
+</body>
+</html>
