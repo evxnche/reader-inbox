@@ -10,8 +10,9 @@ Files, in ~/Library/Application Support/ReaderInbox/:
   x_cookies.json  {"auth_token": "...", "ct0": "..."}   copied from x.com in your browser
   x_seen.json     bookmark ids already sent (written by this script)
 """
-import asyncio, json, os, sys, urllib.error, urllib.request
+import asyncio, base64, json, os, ssl, sys, urllib.error, urllib.request
 
+import certifi  # python.org builds of Python ship without CA certificates
 from twikit import Client
 
 HOME = os.path.expanduser("~/Library/Application Support/ReaderInbox")
@@ -29,6 +30,33 @@ def load(path, default):
         return default
 
 
+def timeline_tweets(response):
+    """(id, screen_name) for each bookmark, newest first, read from the raw GraphQL reply.
+
+    twikit's own Tweet/User parsing breaks whenever X renames a field, so only the few fields
+    needed here are read, and a missing screen name falls back to x.com/i/status/<id>."""
+    found = []
+
+    def visit(node):
+        if isinstance(node, list):
+            for item in node:
+                visit(item)
+        elif isinstance(node, dict):
+            if str(node.get("entryId", "")).startswith("tweet-"):
+                result = node.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {})
+                result = result.get("tweet", result)  # TweetWithVisibilityResults wraps the tweet
+                user = result.get("core", {}).get("user_results", {}).get("result", {})
+                name = user.get("core", {}).get("screen_name") or user.get("legacy", {}).get("screen_name") or "i"
+                if result.get("rest_id"):
+                    found.append((result["rest_id"], name))
+                return
+            for value in node.values():
+                visit(value)
+
+    visit(response)
+    return found
+
+
 def save_seen(ids):
     tmp = SEEN + ".tmp"
     with open(tmp, "w") as f:
@@ -42,7 +70,8 @@ def send(config, url):
         config["inbox"].rstrip("/") + "/api/save", data=json.dumps({"url": url}).encode(),
         headers={"Content-Type": "application/json", "Authorization": "Bearer " + config["key"]})
     try:
-        with urllib.request.urlopen(request, timeout=90) as response:
+        context = ssl.create_default_context(cafile=certifi.where())
+        with urllib.request.urlopen(request, timeout=90, context=context) as response:
             print("saved", url, json.load(response).get("title", ""))
             return True
     except urllib.error.HTTPError as e:
@@ -63,20 +92,26 @@ async def main():
 
     client = Client("en-US")
     client.set_cookies(cookies)
+    # X's 2026 web app dropped the ondemand.s file twikit derives X-Client-Transaction-Id from, and
+    # the bookmarks endpoint answers without a valid one, so skip twikit's derivation entirely.
+    client.client_transaction.home_page_response = True
+    client.client_transaction.generate_transaction_id = (
+        lambda method, path, **_: base64.b64encode(os.urandom(70)).decode().rstrip("="))
     try:
-        bookmarks = list(await client.get_bookmarks(count=FETCH))
+        response, _ = await client.gql.bookmarks(FETCH, None)
     except Exception as e:  # twikit raises its own types; expired cookies show up here
         sys.exit("could not read bookmarks (cookies expired?): %r" % e)
+    bookmarks = timeline_tweets(response)
 
-    new = [t for t in bookmarks if t.id not in seen]
+    new = [(i, name) for i, name in bookmarks if i not in seen]
     if first_run:
         new = new[:FIRST_RUN]
-        sending = {t.id for t in new}
-        seen = [t.id for t in bookmarks if t.id not in sending]
+        sending = {i for i, _ in new}
+        seen = [i for i, _ in bookmarks if i not in sending]
     # Oldest first, so the inbox lists them in the order they were bookmarked.
-    for tweet in reversed(new):
-        if send(config, "https://x.com/%s/status/%s" % (tweet.user.screen_name, tweet.id)):
-            seen.append(tweet.id)
+    for tweet_id, name in reversed(new):
+        if send(config, "https://x.com/%s/status/%s" % (name, tweet_id)):
+            seen.append(tweet_id)
             save_seen(seen)
     if first_run:
         save_seen(seen)
