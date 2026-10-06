@@ -10,6 +10,12 @@ Send articles and X posts to the Xteink reader as clean EPUBs.
 
 X links go through FxTwitter's public API (x.com pages are an empty shell without a login).
 
+X bookmarks arrive on their own: `tools/install-x-bookmarks.sh <inbox-url> <READER_KEY>` installs a
+LaunchAgent that every 15 minutes reads your bookmarks with [twikit](https://github.com/d60/twikit)
+(signed in by your browser's `auth_token` + `ct0` cookies in
+`~/Library/Application Support/ReaderInbox/x_cookies.json`, no API fees) and saves new ones here.
+Log: `/tmp/xbookmarks.log`. twikit uses X's private web API, so it can break when X changes it.
+
 Env: `READER_KEY`, plus `KV_REST_API_URL` / `KV_REST_API_TOKEN` from the Upstash integration.
 
 Tests: `npm test`.
