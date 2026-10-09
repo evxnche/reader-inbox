@@ -8,6 +8,10 @@ Send articles and X posts to the Xteink reader as clean EPUBs.
 - `GET /api/articles` — JSON list, for the reader's Sync Articles
 - `/` — setup page: Mac bookmarklet, iPhone shortcut, reader settings
 
+Arc can't run bookmarklets. For Arc, `tools/send-to-reader.js` is a one-click Mac app that sends the current tab's
+link: `osacompile -l JavaScript -o "/Applications/Send to Reader.app" tools/send-to-reader.js`. It reads the key from
+`~/Library/Application Support/ReaderInbox/reader_key`; the server fetches the page itself.
+
 X links go through FxTwitter's public API (x.com pages are an empty shell without a login).
 
 X bookmarks arrive on their own: `tools/install-x-bookmarks.sh <inbox-url> <READER_KEY>` installs a
