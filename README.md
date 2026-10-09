@@ -12,6 +12,9 @@ Arc can't run bookmarklets. For Arc, `tools/send-to-reader.js` is a one-click Ma
 link: `osacompile -l JavaScript -o "/Applications/Send to Reader.app" tools/send-to-reader.js`. It reads the key from
 `~/Library/Application Support/ReaderInbox/reader_key`; the server fetches the page itself.
 
+iPhone: `tools/make-iphone-shortcut.py` builds a share-sheet shortcut with the key filled in; sign it with
+`shortcuts sign` and open it on the phone (iCloud Drive works).
+
 X links go through FxTwitter's public API (x.com pages are an empty shell without a login).
 
 X bookmarks arrive on their own: `tools/install-x-bookmarks.sh <inbox-url> <READER_KEY>` installs a
