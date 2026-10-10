@@ -22,7 +22,7 @@ async function readInput(request) {
   const type = request.headers.get('content-type') || '';
   if (type.includes('application/json')) {
     const body = await request.json();
-    return { url: body.url, html: body.html || null, form: false };
+    return { url: body.url, html: body.html || null, form: false, probe: body.probe };
   }
   const form = await request.formData();
   return { url: form.get('url'), html: form.get('html') || null, form: true };
@@ -39,7 +39,7 @@ async function handle(request) {
   // Shortcuts sometimes pass text with the link inside it; take the first URL.
   const link = String(input.url || '').match(/https?:\/\/\S+/)?.[0];
   if (!link) {
-    console.log(`no link: ${request.method} ${request.headers.get('content-type') || '-'} url=${JSON.stringify(input.url)?.slice(0, 300)}`);
+    console.log(`no link: ${request.method} ${request.headers.get('content-type') || '-'} url=${JSON.stringify(input.url)?.slice(0, 300)} probe=${JSON.stringify(input.probe)?.slice(0, 600)}`);
     const message = 'No link was sent';
     return input.form ? page('Not saved', message) : Response.json({ ok: false, message }, { status: 400 });
   }
