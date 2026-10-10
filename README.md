@@ -6,6 +6,7 @@ Send articles and X posts to the Xteink reader as clean EPUBs.
 - `GET /api/opds` — the inbox as an OPDS catalog (Basic auth, password = `READER_KEY`)
 - `GET /api/epub?id=` — one article
 - `GET /api/articles` — JSON list, for the reader's Sync Articles
+- `GET /api/text?id=` — one article as plain paragraphs, for reading aloud (the Desk Pal glasses app)
 - `/` — setup page: Mac bookmarklet, iPhone shortcut, reader settings
 
 Arc can't run bookmarklets. For Arc, `tools/arc-to-reader.js` is a one-click Mac app that sends the current tab's
