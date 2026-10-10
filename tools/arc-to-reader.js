@@ -1,4 +1,4 @@
-// Send to Reader: sends the article open in Arc's current tab to the Reader Inbox.
+// Arc to Reader: sends the article open in Arc's current tab to the Reader Inbox.
 const INBOX = 'https://reader-inbox.vercel.app/api/save';
 const KEY_FILE = '~/Library/Application Support/ReaderInbox/reader_key';
 
@@ -22,10 +22,10 @@ function run(argv) {
     try {
       url = Application('Arc').windows[0].activeTab.url();
     } catch (e) {
-      app.displayNotification('Open the article in Arc first.', { withTitle: 'Send to Reader' });
+      app.displayNotification('Open the article in Arc first.', { withTitle: 'Arc to Reader' });
       return;
     }
   }
-  app.displayNotification('Sending...', { withTitle: 'Send to Reader' });
-  app.displayNotification(send(app, url), { withTitle: 'Send to Reader' });
+  app.displayNotification('Sending...', { withTitle: 'Arc to Reader' });
+  app.displayNotification(send(app, url), { withTitle: 'Arc to Reader' });
 }
