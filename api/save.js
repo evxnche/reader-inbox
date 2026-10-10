@@ -39,6 +39,7 @@ async function handle(request) {
   // Shortcuts sometimes pass text with the link inside it; take the first URL.
   const link = String(input.url || '').match(/https?:\/\/\S+/)?.[0];
   if (!link) {
+    console.log(`no link: ${request.method} ${request.headers.get('content-type') || '-'} url=${JSON.stringify(input.url)?.slice(0, 300)}`);
     const message = 'No link was sent';
     return input.form ? page('Not saved', message) : Response.json({ ok: false, message }, { status: 400 });
   }
