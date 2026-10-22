@@ -1,5 +1,5 @@
 # Builds the "Send to Reader" share-sheet shortcut (iPhone + Mac) with the key baked in.
-#   python3 tools/make-iphone-shortcut.py ~/Library/Application\ Support/ReaderInbox/reader_key unsigned.shortcut
+#   python3 tools/make-iphone-shortcut.py ~/Library/Application\ Support/ReaderInbox/reader_key unsigned.shortcut https://<your-inbox>.vercel.app
 #   shortcuts sign --mode people-who-know-me --input unsigned.shortcut --output "Send to Reader.shortcut"
 # The signed file opens on any device on the same Apple ID (e.g. from iCloud Drive). Never commit it: it holds the key.
 #
@@ -7,7 +7,9 @@
 # an empty "Input" slot and every send arrives with no link. Run with nothing shared (Spotlight on the Mac), it
 # opens Arc to Reader (tools/arc-to-reader.js), which sends Arc's current tab instead.
 import plistlib, sys, uuid
+if len(sys.argv) != 4: sys.exit("usage: make-iphone-shortcut.py <reader_key file> <out.shortcut> https://<your-inbox>.vercel.app")
 key = open(sys.argv[1]).read().strip()
+SAVE = sys.argv[3].rstrip("/") + "/api/save"
 def U(): return str(uuid.uuid4()).upper()
 EXT = {"Type": "ExtensionInput"}
 def text(s): return {"Value": {"string": s, "attachmentsByRange": {}}, "WFSerializationType": "WFTextTokenString"}
@@ -34,7 +36,7 @@ actions = [
     {"WFWorkflowActionIdentifier": "is.workflow.actions.detect.link",
      "WFWorkflowActionParameters": {"UUID": urls, "WFInput": tok(EXT)}},
     {"WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
-     "WFWorkflowActionParameters": {"UUID": post, "WFURL": "https://reader-inbox.vercel.app/api/save", "WFHTTPMethod": "POST",
+     "WFWorkflowActionParameters": {"UUID": post, "WFURL": SAVE, "WFHTTPMethod": "POST",
         "ShowHeaders": True, "WFHTTPHeaders": fields(("Authorization", text("Bearer " + key))),
         # The server takes the first link in the text, so the raw input backs up Get URLs.
         "WFHTTPBodyType": "JSON", "WFJSONValues": fields(("url", tok(out(urls, "URLs"), " ", EXT)))}},
